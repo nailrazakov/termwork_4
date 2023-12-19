@@ -81,11 +81,11 @@ class SuperJobApi(ApiWork):
         self.payload = {}
 
     def get_vacancies(self, word, area=1, period=30):
-        payload = {
+        self.payload = {
             'keyword': word,
             'town': area,
             'no_agreement': 1,
-            'page': 0,
+            'page': None,
             'period': period,
         }
         response = requests.get(self.url, headers=self.headers, params=self.payload)
@@ -108,7 +108,6 @@ class SuperJobApi(ApiWork):
 class Vacancy:
     """Класс для работы с вакансиями"""
     all = []
-    all_json = []
 
     def __init__(self, vacancy_id, vacancy_title, vacancy_url, company_name, published, salary):
         self.vacancy_id = vacancy_id
@@ -122,48 +121,63 @@ class Vacancy:
         else:
             self.salary_to = salary[0]
             self.salary_from = salary[1]
-
-        self.data = {
-            'id_вакансии': self.vacancy_id,
-            'название вакансии': self.vacancy_title,
-            'название компании': self.company_name,
-            'ссылка на вакансию': self.vacancy_url,
-            'дата публикации': self.published,
-            'зарплата от': self.salary_from,
-            'зарплата до': self.salary_to
-        }
         self.__class__.all.append(self)
-        self.__class__.all_json.append(self.data)
 
     def __repr__(self):
-        return (f"ID: {self.vacancy_id}\nTitle: {self.vacancy_title}\nCompany: {self.company_name}\n"
-                f"URL: {self.vacancy_url}\nSalary: {self.salary_from} - {self.salary_to} руб\n"
-                f"Опубликовано {self.published}\n")
+        return (f"id_вакансии: {self.vacancy_id}\nназвание вакансии: {self.vacancy_title}\n"
+                f"название компании: {self.company_name}\nссылка на вакансию: {self.vacancy_url}\n"
+                f"зарплата от - до: {self.salary_from} - {self.salary_to} руб\n"
+                f"дата публикации: {self.published}\n")
 
     def __len__(self):
         return len(self.all)
 
 
-class Saver:
+class Saver(Vacancy):
     def __init__(self, name, list_of_vacancy):
         self.name = name + '.json'
         self.list_of_vacancy = list_of_vacancy
+        self.json_format = []
+
+    def list_format(self):
+        for items in self.list_of_vacancy:
+            data = {
+                'id_вакансии': items.vacancy_id,
+                'название вакансии': items.vacancy_title,
+                'название компании': items.company_name,
+                'ссылка на вакансию': items.vacancy_url,
+                'зарплата от': items.salary_from,
+                'зарплата до': items.salary_to,
+                'дата публикации': items.published
+            }
+            self.json_format.append(data)
 
     def saver_to_json(self):
+        """Метод для сохранения"""
         with open(self.name, 'a', encoding='utf-8') as file:
-            json.dump(self.list_of_vacancy, file, ensure_ascii=False, indent=4, default=str)
+            json.dump(self.json_format, file, ensure_ascii=False, indent=4, default=str)
 
     def sorted_list(self):
-        """Метод для сортировки"""
+        """Метод для сортировки по зарплате как для объекта так и для списка"""
         try:
             sorted_list = sorted(self.list_of_vacancy, key=lambda x: x['зарплата до'], reverse=True)
         except TypeError:
             sorted_list = sorted(self.list_of_vacancy, key=lambda x: x.salary_to, reverse=True)
         return sorted_list
 
-    def delete_item(self, key):
-        pass
+    def delete_item(self):
+        """
+        Удаляет элементы списка если они не соответствуют условиям
+        """
+        new_list = []
+        for item in self.list_of_vacancy:
+            if item.salary_to != 0:
+                new_list.append(item)
+        self.list_of_vacancy = new_list
 
-    def top_n(self, n):
+    def top_5(self):
+        """
+        Метод возвращает топ 5
+        """
         list_sort = self.sorted_list()
-        return list_sort[0:n]
+        return list_sort[0:5]
