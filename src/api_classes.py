@@ -3,6 +3,8 @@ import json
 import requests
 import isodate
 import datetime
+import os
+from dotenv import load_dotenv
 
 
 class ApiWork(ABC):
@@ -11,6 +13,22 @@ class ApiWork(ABC):
     @abstractmethod
     def get_vacancies(self, word):
         """Подключаться к API и получает вакансии"""
+        pass
+
+
+class Saver(ABC):
+    """Абстрактный класс для работы с файлами"""
+
+    @abstractmethod
+    def saver_to_file(self):
+        pass
+
+    @abstractmethod
+    def sorted_list(self):
+        pass
+
+    @abstractmethod
+    def delete_item(self, value):
         pass
 
 
@@ -71,7 +89,8 @@ class SuperJobApi(ApiWork):
     """
     Класс для работы с Api SuperJob
     """
-    api_key = 'v3.r.138018641.3c02e4f5c8465896c09352c8162e18be30844f2b.c115a86975848929a4b26ce62e07ee3c85d686c8'
+    load_dotenv()
+    api_key = os.getenv('API_KEY_SJ')
 
     def __init__(self):
         self.url = 'https://api.superjob.ru/2.0/vacancies/'
@@ -80,17 +99,16 @@ class SuperJobApi(ApiWork):
         }
         self.payload = {}
 
-    def get_vacancies(self, word, area=1, period=30):
+    def get_vacancies(self, word, area=1, period=7):
         self.payload = {
             'keyword': word,
-            'town': area,
+            # 'town': area,
             'no_agreement': 1,
-            'page': None,
-            'period': period,
+            # 'page': None,
+            # 'period': period,
         }
         response = requests.get(self.url, headers=self.headers, params=self.payload)
-        print(response)
-        response.raise_for_status()
+        # response.raise_for_status()
         page_data = response.json()
         vacancies = page_data.get("objects", [])
         for vacancy in vacancies:
@@ -103,6 +121,22 @@ class SuperJobApi(ApiWork):
             salary_from = vacancy.get('payment_from', {})
             salary_to = vacancy.get('payment_to', {})
             Vacancy(vacancy_id, vacancy_title, vacancy_url, company_name, published, [salary_from, salary_to])
+
+
+class FromFile(ApiWork):
+    def get_vacancies(self, word):
+        file_name = str(word) + '.json'
+        with open(file_name, "r", encoding="utf-8") as file:
+            data = json.load(file)
+            for item in data:
+                vacancy_id = item['id_вакансии']
+                vacancy_title = item['название вакансии']
+                company_name = item['название компании']
+                vacancy_url = item['ссылка на вакансию']
+                salary_from = item['зарплата от']
+                salary_to = item['зарплата до']
+                published = item['дата публикации']
+                Vacancy(vacancy_id, vacancy_title, vacancy_url, company_name, published, [salary_from, salary_to])
 
 
 class Vacancy:
@@ -133,7 +167,7 @@ class Vacancy:
         return len(self.all)
 
 
-class Saver(Vacancy):
+class SaverJson(Saver):
     def __init__(self, name, list_of_vacancy):
         self.name = name + '.json'
         self.list_of_vacancy = list_of_vacancy
@@ -152,9 +186,9 @@ class Saver(Vacancy):
             }
             self.json_format.append(data)
 
-    def saver_to_json(self):
+    def saver_to_file(self):
         """Метод для сохранения"""
-        with open(self.name, 'a', encoding='utf-8') as file:
+        with open(self.name, 'w', encoding='utf-8') as file:
             json.dump(self.json_format, file, ensure_ascii=False, indent=4, default=str)
 
     def sorted_list(self):
@@ -165,14 +199,19 @@ class Saver(Vacancy):
             sorted_list = sorted(self.list_of_vacancy, key=lambda x: x.salary_to, reverse=True)
         return sorted_list
 
-    def delete_item(self):
+    def delete_item(self, value):
         """
         Удаляет элементы списка если они не соответствуют условиям
         """
         new_list = []
-        for item in self.list_of_vacancy:
-            if item.salary_to != 0:
-                new_list.append(item)
+        if value == 0:
+            for item in self.list_of_vacancy:
+                if item.salary_to != 0:
+                    new_list.append(item)
+        else:
+            for item in self.list_of_vacancy:
+                if item.vacancy_id != value:
+                    new_list.append(item)
         self.list_of_vacancy = new_list
 
     def top_5(self):
