@@ -16,6 +16,7 @@ def interaction():
                 print(js.list_of_vacancy[i])
             print(f"Найдено {len(Vacancy.all)} вакансий")
             what_doing(js)
+            Vacancy.all.clear()
         elif user_input_1 == "2":
             sj_1 = SuperJobApi()
             sj_1_word = input("Введите название вакансии\n>>>")
@@ -23,7 +24,7 @@ def interaction():
             js = SaverJson(sj_1_word, Vacancy.all)
             print(f"Найдено {len(Vacancy.all)} вакансий")
             what_doing(js)
-            break
+            Vacancy.all.clear()
         elif user_input_1 == "3":
             hh_1 = HeadHunterApi()
             sj_1 = SuperJobApi()
@@ -33,6 +34,7 @@ def interaction():
             hs = SaverJson(word, Vacancy.all)
             print(f"Найдено {len(Vacancy.all)} вакансий")
             what_doing(hs)
+            Vacancy.all.clear()
             break
         elif user_input_1 == '4':
             fn_1 = FromFile()
@@ -45,8 +47,9 @@ def interaction():
                 sj = SaverJson(fn_1_word, Vacancy.all)
                 print(f"Найдено {len(Vacancy.all)} вакансий")
                 what_doing(sj)
+                Vacancy.all.clear()
         elif user_input_1 == "5":
-            print("GoodBye")
+            print("До свиданья")
             break
         else:
             print("Выберете номер соответствующего пункта и нажмите Enter")
@@ -104,7 +107,6 @@ def what_doing(class_object):
             class_object.saver_to_file()
             break
         elif user_input == "4":
-            print("Досвидания!")
             break
         else:
             print("Выберете номер соответствующего пункта и нажмите Enter")

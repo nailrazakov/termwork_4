@@ -46,7 +46,7 @@ class HeadHunterApi(ApiWork):
 
     def get_vacancies(self, word, area=113, period=30):
         print("Сбор данных")
-        for page in range(5):
+        for page in range(20):
             self.params = {
                 "text": word,
                 "area": area,  # Specify the desired area ID (1 is Moscow)
